@@ -1,36 +1,136 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💸 Expense Tracker PWA
 
-## Getting Started
+A minimal, playful expense tracking web app built with **Next.js**,
+**Prisma**, and **SQLite** --- installable as a **Progressive Web App
+(PWA)**.
 
-First, run the development server:
+> "Poof 💸 There goes your money again!"
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+------------------------------------------------------------------------
+
+## ✨ Features
+
+-   📅 Daily expense tracking
+-   💰 Auto-calculated total per day
+-   ⚡ Instant save with Enter key
+-   🎲 Random playful notifications
+-   📱 Installable PWA (Android / iOS / macOS)
+-   🗄 SQLite database
+-   🔥 Clean and minimal UI (MUI)
+
+------------------------------------------------------------------------
+
+## 🛠 Tech Stack
+
+-   Next.js 16 (App Router)
+-   TypeScript
+-   Prisma ORM
+-   SQLite
+-   MUI
+-   Day.js
+-   next-pwa
+
+------------------------------------------------------------------------
+
+## 📦 Installation
+
+``` bash
+git clone https://github.com/your-username/expense-tracker.git
+cd expense-tracker
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+------------------------------------------------------------------------
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🗄 Setup Database
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Generate Prisma client:
 
-## Learn More
+``` bash
+npx prisma generate
+```
 
-To learn more about Next.js, take a look at the following resources:
+Run migrations:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+``` bash
+npx prisma migrate dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+------------------------------------------------------------------------
 
-## Deploy on Vercel
+## 🚀 Run Development
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+``` bash
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open:
+
+    http://localhost:3000
+
+------------------------------------------------------------------------
+
+## 🏗 Production Build
+
+``` bash
+npm run build
+npm start
+```
+
+------------------------------------------------------------------------
+
+## 📱 PWA Support
+
+This app supports installation as a Progressive Web App.
+
+### Requirements:
+
+-   HTTPS (required on Android)
+-   `manifest.json`
+-   Service worker via `next-pwa`
+-   Icons (192x192, 512x512)
+
+### Test PWA:
+
+1.  Open in Chrome
+2.  DevTools → Application → Manifest
+3.  Check Service Worker registered
+4.  Install from browser menu
+
+
+
+------------------------------------------------------------------------
+
+## 🎲 Fun Notification System
+
+Randomized message packs for:
+
+-   ✅ Successful save
+-   ⚠️ Incomplete input
+-   ❌ Save failure
+
+Adds personality to the experience.
+
+------------------------------------------------------------------------
+
+## 🧩 Future Improvements
+
+-   Categories
+-   Monthly summary
+-   Charts
+-   Dark mode
+-   Cloud sync
+-   Authentication
+-   Offline caching strategy upgrade
+
+------------------------------------------------------------------------
+
+## 📄 License
+
+MIT
+
+------------------------------------------------------------------------
+
+## 👨‍💻 Author
+
+Built with ☕ and questionable financial decisions.

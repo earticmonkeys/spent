@@ -5,14 +5,14 @@ import { prisma } from "../prisma";
 
 interface ExpenseSave {
   title: string;
-  amount: number;
+  amount: string;
 }
 
 export const saveExpense = async ({ title, amount }: ExpenseSave) => {
   const expense = await prisma.expense.create({
     data: {
       title,
-      amount,
+      amount: parseFloat(amount.replace(/,/g, "")),
     },
   });
 

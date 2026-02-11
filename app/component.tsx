@@ -13,7 +13,14 @@ import {
 import dayjs from "dayjs";
 import calendar from "dayjs/plugin/calendar";
 import React from "react";
-import { TbCirclePlusFilled, TbCurrencyBaht, TbX } from "react-icons/tb";
+import {
+  TbArrowLeft,
+  TbCirclePlusFilled,
+  TbCurrencyBaht,
+  TbX,
+} from "react-icons/tb";
+
+import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 
 dayjs.extend(calendar);
 
@@ -31,9 +38,10 @@ const formatterTHB = new Intl.NumberFormat("th-TH", {
 });
 
 export const Expense = () => {
+  const [selectedDate, setSelectedDate] = React.useState(dayjs());
   const [expenseInput, setExpenseInput] = React.useState({
     title: "",
-    amount: 0,
+    amount: "",
   });
 
   const [expenses, setExpenses] = React.useState<{
@@ -44,14 +52,14 @@ export const Expense = () => {
   const handleOnGetExpense = async () => {
     const today = dayjs();
 
-    const response = await expense.get(today.toDate());
+    const response = await expense.get(selectedDate.toDate());
 
     setExpenses(response);
   };
 
   React.useEffect(() => {
     handleOnGetExpense();
-  }, []);
+  }, [selectedDate]);
 
   const handleOnExpenseInput = (field: "title" | "amount", value: string) => {
     setExpenseInput((prev) => ({
@@ -60,9 +68,33 @@ export const Expense = () => {
     }));
   };
 
+  const handleAmountChange = (value: string) => {
+    const input = value.replace(/,/g, "");
+
+    // อนุญาตตัวเลข + จุด + ทศนิยม 2 ตำแหน่ง
+    if (!/^\d*\.?\d{0,2}$/.test(input)) return;
+
+    // แยก integer กับ decimal
+    const [integer, decimal] = input.split(".");
+
+    const formattedInteger = integer
+      ? Number(integer).toLocaleString("th-TH")
+      : "";
+
+    const formatted =
+      decimal !== undefined
+        ? `${formattedInteger}.${decimal}`
+        : formattedInteger;
+
+    setExpenseInput((prev) => ({
+      ...prev,
+      amount: formatted,
+    }));
+  };
+
   const handleOnExpenseSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (expenseInput.title.length <= 0 || expenseInput.amount <= 0) {
+    if (expenseInput.title.length <= 0 || expenseInput.amount.length <= 0) {
       return saveToast("INVALID");
     }
     const response = await expense.save(expenseInput);
@@ -71,9 +103,20 @@ export const Expense = () => {
       return saveToast("FAIL");
     }
 
-    setExpenseInput({ title: "", amount: 0 });
+    setExpenseInput({ title: "", amount: "" });
     await handleOnGetExpense();
     return saveToast("SUCCESS");
+  };
+  const handlePrevDay = () => {
+    setSelectedDate((prev) => prev.subtract(1, "day"));
+  };
+
+  const handleNextDay = () => {
+    const tomorrow = selectedDate.add(1, "day");
+
+    if (tomorrow.isAfter(dayjs(), "day")) return; // ❌ ห้ามเกินวันนี้
+
+    setSelectedDate(tomorrow);
   };
 
   return (
@@ -101,14 +144,38 @@ export const Expense = () => {
             alignItems={"center"}
           >
             {/* DATE SECTION */}
-            <Stack>
-              <Typography textAlign={"center"} fontSize={16} fontWeight={500}>
-                {formatDate(new Date())}
-              </Typography>
-              <Typography fontSize={12} fontWeight={400} color="grey">
-                {dayjs(new Date()).format("dddd")},{" "}
-                {dayjs(new Date()).format("MMMM DD")}
-              </Typography>
+            <Stack
+              width={"100%"}
+              display={"flex"}
+              direction={"row"}
+              gap={10}
+              justifyContent={"center"}
+            >
+              <IconButton onClick={() => handlePrevDay()} disableRipple>
+                <MdChevronLeft />
+              </IconButton>
+              <Stack>
+                <Typography textAlign={"center"} fontSize={16} fontWeight={500}>
+                  {formatDate(selectedDate.toDate())}
+                </Typography>
+                <Typography fontSize={12} fontWeight={400} color="grey">
+                  {dayjs(new Date()).format("dddd")},{" "}
+                  {dayjs(new Date()).format("MMMM DD")}
+                </Typography>
+              </Stack>
+              {!selectedDate.isSame(dayjs(), "day") ? (
+                <IconButton onClick={handleNextDay} disableRipple>
+                  <MdChevronRight />
+                </IconButton>
+              ) : (
+                <IconButton
+                  sx={{
+                    visibility: "hidden",
+                  }}
+                >
+                  <MdChevronRight />
+                </IconButton>
+              )}
             </Stack>
 
             {/* SUMMARY SECTION */}
@@ -191,12 +258,11 @@ export const Expense = () => {
                       placeholder="0.00"
                       variant="standard"
                       fullWidth
-                      type="number"
-                      value={
-                        expenseInput.amount === 0 ? "" : expenseInput.amount
-                      }
+                      type="text"
+                      inputMode="decimal"
+                      value={expenseInput.amount}
                       onChange={(e) =>
-                        handleOnExpenseInput("amount", e.target.value)
+                        handleAmountChange(e.currentTarget.value)
                       }
                       slotProps={{
                         input: {
@@ -231,43 +297,57 @@ export const Expense = () => {
             </form>
           </Stack>
         </Stack>
-        <Stack maxHeight={500} overflow={"scroll"} marginTop={2} paddingX={3}>
-          {expenses?.expense.map((item, index) => (
-            <div key={index}>
-              <Stack
-                marginBottom={1}
-                width={"100%"}
-                direction={"row"}
-                key={index}
-                display={"flex"}
-                justifyContent={"space-between"}
-              >
-                <Stack direction={"row"}>
-                  <Typography color="grey" marginRight={2}>
-                    {index >= 9 ? index + 1 : "0" + (index + 1)}
-                  </Typography>
-                  <Typography>{item.title}</Typography>
-                </Stack>
+        {(expenses?.expense?.length ?? 0) > 0 ? (
+          <Stack maxHeight={500} overflow={"scroll"} marginTop={2} paddingX={3}>
+            {expenses?.expense.map((item, index) => (
+              <div key={index}>
                 <Stack
-                  display={"flex"}
-                  gap={1}
+                  marginBottom={1}
+                  width={"100%"}
                   direction={"row"}
-                  alignItems={"center"}
+                  key={index}
+                  display={"flex"}
+                  justifyContent={"space-between"}
                 >
-                  <Typography>{formatterTHB.format(item.amount)}</Typography>
-                  <IconButton size="small" disableFocusRipple>
-                    <TbX />
-                  </IconButton>
+                  <Stack direction={"row"}>
+                    <Typography color="grey" marginRight={2}>
+                      {index >= 9 ? index + 1 : "0" + (index + 1)}
+                    </Typography>
+                    <Typography>{item.title}</Typography>
+                  </Stack>
+                  <Stack
+                    display={"flex"}
+                    gap={1}
+                    direction={"row"}
+                    alignItems={"center"}
+                  >
+                    <Typography>{formatterTHB.format(item.amount)}</Typography>
+                    <IconButton size="small" disableFocusRipple>
+                      <TbX />
+                    </IconButton>
+                  </Stack>
                 </Stack>
-              </Stack>
-              <Divider
-                sx={{
-                  marginBottom: 3,
-                }}
-              />
-            </div>
-          ))}
-        </Stack>
+                <Divider
+                  sx={{
+                    marginBottom: 3,
+                  }}
+                />
+              </div>
+            ))}
+          </Stack>
+        ) : (
+          <Stack
+            height={300}
+            width={"100%"}
+            justifyContent={"center"}
+            alignItems={"center"}
+          >
+            <Typography color="grey">No expenses yet today</Typography>
+            <Typography fontSize={12} color="grey">
+              Start typing above to add one
+            </Typography>
+          </Stack>
+        )}
       </Stack>
     </Container>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import toast from "react-hot-toast";
-import { TbMoodAngry, TbMoodHappy, TbMoodSad } from "react-icons/tb";
 
 export const successMessages = [
   "Poof 💸 There goes your money again! 💨",

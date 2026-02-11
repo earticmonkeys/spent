@@ -145,20 +145,27 @@ export const Expense = () => {
           >
             {/* DATE SECTION */}
             <Stack
+              marginTop={3}
               width={"100%"}
               display={"flex"}
               direction={"row"}
-              gap={10}
+              gap={3}
               justifyContent={"center"}
             >
               <IconButton onClick={() => handlePrevDay()} disableRipple>
                 <MdChevronLeft />
               </IconButton>
-              <Stack>
+              <Stack width={"100%"}>
                 <Typography textAlign={"center"} fontSize={16} fontWeight={500}>
                   {formatDate(selectedDate.toDate())}
                 </Typography>
-                <Typography fontSize={12} fontWeight={400} color="grey">
+                <Typography
+                  textAlign={"center"}
+                  fontSize={12}
+                  noWrap
+                  fontWeight={400}
+                  color="grey"
+                >
                   {dayjs(new Date()).format("dddd")},{" "}
                   {dayjs(new Date()).format("MMMM DD")}
                 </Typography>

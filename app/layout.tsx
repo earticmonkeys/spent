@@ -5,6 +5,7 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import theme from "../theme/theme";
 import { ThemeProvider } from "@mui/material/styles";
 import { Toaster } from "react-hot-toast";
+import { Menu } from "@/component/Menu";
 
 export const metadata: Metadata = {
   title: "Expense Tracker",
@@ -31,6 +32,7 @@ export default function RootLayout({
           <ThemeProvider theme={theme}>
             <Toaster position="top-center" />
             {children}
+            <Menu />
           </ThemeProvider>
         </AppRouterCacheProvider>
       </body>

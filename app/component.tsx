@@ -246,8 +246,8 @@ export const Expense = () => {
                   fontWeight={400}
                   color="grey"
                 >
-                  {dayjs(new Date()).format("dddd")},{" "}
-                  {dayjs(new Date()).format("MMMM DD")}
+                  {dayjs(selectedDate).format("dddd")},{" "}
+                  {dayjs(selectedDate).format("MMMM DD")}
                 </Typography>
               </Stack>
               {!selectedDate.isSame(dayjs(), "day") ? (

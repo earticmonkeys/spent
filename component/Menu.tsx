@@ -1,21 +1,27 @@
 "use client";
 
-import { Stack, IconButton, Typography } from "@mui/material";
-import {
-  TbLayoutDashboard,
-  TbCalendar,
-  TbPlus,
-  TbChartBar,
-} from "react-icons/tb";
+import { Stack, Typography } from "@mui/material";
+import { TbLayoutDashboard, TbCalendar, TbSun } from "react-icons/tb";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export const Menu = () => {
   const [active, setActive] = useState("summary");
+  const router = useRouter();
 
   const items = [
-    { key: "summary", icon: <TbLayoutDashboard size={22} />, label: "Summary" },
-    { key: "calendar", icon: <TbCalendar size={22} />, label: "Calendar" },
-    { key: "insights", icon: <TbChartBar size={22} />, label: "Insights" },
+    {
+      key: "insights",
+      icon: <TbSun size={22} />,
+      label: "Today",
+      href: "/",
+    },
+    {
+      key: "calendar",
+      icon: <TbCalendar size={22} />,
+      label: "Calendar",
+      href: "/calendar",
+    },
   ];
 
   return (
@@ -45,7 +51,10 @@ export const Menu = () => {
             transition: "0.2s",
             cursor: "pointer",
           }}
-          onClick={() => setActive(item.key)}
+          onClick={() => {
+            setActive(item.key);
+            router.push(item.href);
+          }}
         >
           {item.icon}
           <Typography fontSize={11}>{item.label}</Typography>

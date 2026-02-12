@@ -3,6 +3,7 @@
 import { saveToast } from "@/component/Toaster";
 import { expense } from "@/libs/expense";
 import {
+  Button,
   Container,
   Divider,
   IconButton,
@@ -13,17 +14,14 @@ import {
 import dayjs from "dayjs";
 import calendar from "dayjs/plugin/calendar";
 import React from "react";
-import {
-  TbArrowLeft,
-  TbCirclePlusFilled,
-  TbCurrencyBaht,
-  TbTrash,
-  TbX,
-} from "react-icons/tb";
+import { TbCirclePlusFilled, TbCurrencyBaht, TbTrash } from "react-icons/tb";
+
+import { FcCalendar } from "react-icons/fc";
 
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { motion, useMotionValue, useTransform } from "motion/react";
 import toast from "react-hot-toast";
+import { useSearchParams, useRouter } from "next/navigation";
 
 dayjs.extend(calendar);
 
@@ -40,19 +38,26 @@ const formatterTHB = new Intl.NumberFormat("th-TH", {
   currency: "THB",
 });
 
-export const Expense = () => {
-  const [selectedDate, setSelectedDate] = React.useState(dayjs());
+export const Expense = (props: {
+  expense: {
+    sum: number;
+    expense: { id: number; title: string; amount: number }[];
+  };
+  queryDate: string;
+}) => {
+  const router = useRouter();
+
+  const [selectedDate, setSelectedDate] = React.useState(
+    dayjs(props.queryDate),
+  );
   const [expenseInput, setExpenseInput] = React.useState({
     title: "",
     amount: "",
   });
-  const [activeDirection, setActiveDirection] = React.useState<
-    "x" | "y" | null
-  >(null);
   const [expenses, setExpenses] = React.useState<{
     sum: number;
     expense: { id: number; title: string; amount: number }[];
-  }>();
+  }>(props.expense);
 
   const handleOnGetExpense = async () => {
     const response = await expense.get(selectedDate.toDate());
@@ -214,9 +219,37 @@ export const Expense = () => {
           justifyContent={"flex-start"}
           alignItems={"start"}
         >
-          <Typography fontSize={24} fontWeight={600}>
-            Spent
-          </Typography>
+          <Stack
+            width={"100%"}
+            direction={"row"}
+            display={"flex"}
+            justifyContent={"space-between"}
+          >
+            <Typography fontSize={24} fontWeight={600}>
+              Spent
+            </Typography>
+            <Button
+              onClick={() => {
+                setSelectedDate(dayjs());
+                router.replace("/");
+              }}
+              variant="contained"
+              sx={{
+                borderRadius: 5,
+                width: 30,
+                paddingX: 6,
+                fontWeight: 700,
+                fontSize: 12,
+                background: "white",
+                color: "#111827",
+                boxShadow: "0 0px 5px rgba(0,0,0,0.10)",
+              }}
+              disableElevation
+              startIcon={<FcCalendar size={20} color="red" />}
+            >
+              Today
+            </Button>
+          </Stack>
           <Stack
             width={"100%"}
             display={"flex"}

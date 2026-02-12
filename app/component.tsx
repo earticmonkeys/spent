@@ -98,7 +98,7 @@ export const Expense = () => {
     if (expenseInput.title.length <= 0 || expenseInput.amount.length <= 0) {
       return saveToast("INVALID");
     }
-    const response = await expense.save(expenseInput);
+    const response = await expense.save(expenseInput, selectedDate.toDate());
 
     if (response.status !== 200) {
       return saveToast("FAIL");
@@ -153,7 +153,7 @@ export const Expense = () => {
             right={0}
             top={0}
             bottom={0}
-            width={80}
+            width={120}
             bgcolor="#F63049"
             justifyContent="center"
             alignItems="center"
@@ -385,7 +385,7 @@ export const Expense = () => {
           </Stack>
         </Stack>
         {(expenses?.expense?.length ?? 0) > 0 ? (
-          <Stack maxHeight={500} overflow={"scroll"} marginTop={2} paddingX={2}>
+          <Stack maxHeight={300} overflow={"scroll"} marginTop={2} paddingX={2}>
             {expenses?.expense.map((item, index) => (
               <SwipeItem
                 key={index}

@@ -8,11 +8,15 @@ interface ExpenseSave {
   amount: string;
 }
 
-export const saveExpense = async ({ title, amount }: ExpenseSave) => {
+export const saveExpense = async (
+  { title, amount }: ExpenseSave,
+  selectedDate: Date,
+) => {
   const expense = await prisma.expense.create({
     data: {
       title,
       amount: parseFloat(amount.replace(/,/g, "")),
+      createdAt: selectedDate,
     },
   });
 

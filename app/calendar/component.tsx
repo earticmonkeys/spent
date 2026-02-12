@@ -1,16 +1,19 @@
 "use client";
 
 import React from "react";
-import { Stack, Typography, Badge, Divider } from "@mui/material";
+import { Stack, Typography, Badge, Divider, IconButton } from "@mui/material";
 import { DateCalendar, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
 import { expense } from "@/libs/expense";
 import { motion } from "motion/react";
-
+import { FaGear } from "react-icons/fa6";
+import { useRouter } from "next/navigation";
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = React.useState<Dayjs>(dayjs());
   const [currentMonth, setCurrentMonth] = React.useState<Dayjs>(dayjs());
   const [markedDates, setMarkedDates] = React.useState<Set<string>>(new Set());
+
+  const router = useRouter();
 
   const [dailyExpense, setDailyExpense] = React.useState<{
     sum: number;
@@ -126,9 +129,29 @@ export default function CalendarPage() {
             bgcolor="white"
             boxShadow="0 6px 16px rgba(0,0,0,0.06)"
           >
-            <Typography fontWeight={600}>
-              {selectedDate.format("dddd, MMM D")}
-            </Typography>
+            <Stack
+              display={"flex"}
+              direction={"row"}
+              justifyContent={"space-between"}
+              alignItems={"center"}
+              width={"100%"}
+            >
+              <Typography fontWeight={600}>
+                {selectedDate.format("dddd, MMM D")}
+              </Typography>
+              <IconButton
+                onClick={() =>
+                  router.push(`/?date=${selectedDate.toISOString()}`)
+                }
+                sx={{
+                  fontSize: 14,
+                  background: "white",
+                  color: "#111827",
+                }}
+              >
+                <FaGear />
+              </IconButton>
+            </Stack>
 
             <Typography fontSize={28} fontWeight={900} mt={1}>
               ฿{dailyExpense.sum.toLocaleString()}

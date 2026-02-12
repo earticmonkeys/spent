@@ -1,15 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+// Import the specific adapter
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const globalForPrisma = global as unknown as {
-  prisma: PrismaClient | undefined;
-};
+// Instantiate the adapter with your connection string
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ["error"],
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+// Pass the adapter to the PrismaClient constructor
+export const prisma = new PrismaClient({ adapter });

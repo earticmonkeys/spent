@@ -5,7 +5,9 @@
   "scripts": {
     "build": "next build --webpack",
     "dev": "next dev --webpack",
-    "start": "next start"
+    "start": "next start",
+    "postinstall": "prisma generate",
+    "migrate": "prisma migrate deploy"
   },
   "type": "module",
   "dependencies": {
@@ -16,7 +18,7 @@
     "@mui/material-nextjs": "^7.3.7",
     "@mui/x-date-pickers": "^8.27.0",
     "@prisma/adapter-pg": "^7.4.0",
-    "@prisma/client": "^7.3.0",
+    "@prisma/client": "^7.4.0",
     "@types/pg": "^8.16.0",
     "dayjs": "^1.11.19",
     "dotenv": "^17.2.4",

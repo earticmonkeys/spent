@@ -59,3 +59,23 @@ export const getExpense = async (date: Date) => {
     expense: expense,
   };
 };
+
+export const deleteExpense = async (id: number) => {
+  const expense = await prisma.expense.delete({
+    where: {
+      id,
+    },
+  });
+
+  if (!expense) {
+    return {
+      status: 400,
+      message: "Oouch ! delete expense unsuccessful",
+    };
+  }
+
+  return {
+    status: 200,
+    message: "Becareful Next Time !",
+  };
+};

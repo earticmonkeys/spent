@@ -17,10 +17,13 @@ import {
   TbArrowLeft,
   TbCirclePlusFilled,
   TbCurrencyBaht,
+  TbTrash,
   TbX,
 } from "react-icons/tb";
 
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
+import { motion, useMotionValue, useTransform } from "motion/react";
+import toast from "react-hot-toast";
 
 dayjs.extend(calendar);
 
@@ -43,15 +46,15 @@ export const Expense = () => {
     title: "",
     amount: "",
   });
-
+  const [activeDirection, setActiveDirection] = React.useState<
+    "x" | "y" | null
+  >(null);
   const [expenses, setExpenses] = React.useState<{
     sum: number;
-    expense: { title: string; amount: number }[];
+    expense: { id: number; title: string; amount: number }[];
   }>();
 
   const handleOnGetExpense = async () => {
-    const today = dayjs();
-
     const response = await expense.get(selectedDate.toDate());
 
     setExpenses(response);
@@ -71,10 +74,8 @@ export const Expense = () => {
   const handleAmountChange = (value: string) => {
     const input = value.replace(/,/g, "");
 
-    // อนุญาตตัวเลข + จุด + ทศนิยม 2 ตำแหน่ง
     if (!/^\d*\.?\d{0,2}$/.test(input)) return;
 
-    // แยก integer กับ decimal
     const [integer, decimal] = input.split(".");
 
     const formattedInteger = integer
@@ -117,6 +118,85 @@ export const Expense = () => {
     if (tomorrow.isAfter(dayjs(), "day")) return; // ❌ ห้ามเกินวันนี้
 
     setSelectedDate(tomorrow);
+  };
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+  const handleDelete = async (id: number) => {
+    const response = await expense.delete(id);
+
+    if (response.status !== 200) {
+      return toast.error(response.message);
+    }
+
+    await sleep(250);
+
+    await handleOnGetExpense();
+    return toast.success(response.message);
+  };
+
+  type SwipeItemProps = {
+    item: { id: number; title: string; amount: number };
+    index: number;
+    onDelete: (id: number) => void;
+  };
+  const SwipeItem = ({ item, index, onDelete }: SwipeItemProps) => {
+    const x = useMotionValue(0);
+    const opacity = useTransform(x, [-80, -40], [1, 0]);
+    const scale = useTransform(x, [-80, -40], [1, 0.5]);
+
+    return (
+      <div style={{ position: "relative", marginBottom: 12, width: "100%" }}>
+        {/* Background */}
+        <motion.div style={{ opacity, scale }} dragElastic={0.08}>
+          <Stack
+            position="absolute"
+            right={0}
+            top={0}
+            bottom={0}
+            width={80}
+            bgcolor="#F63049"
+            justifyContent="center"
+            alignItems="center"
+            borderRadius={2}
+          >
+            <TbTrash size={24} color="white" />
+          </Stack>
+        </motion.div>
+
+        {/* Foreground */}
+        <motion.div
+          style={{ x }}
+          drag="x"
+          dragConstraints={{ left: -85, right: 0 }}
+          dragElastic={0.5}
+          onDragEnd={(e, info) => {
+            if (info.offset.x < -80) {
+              onDelete(item.id);
+            }
+          }}
+        >
+          <Stack
+            bgcolor="white"
+            padding={2.5}
+            width={"100%"}
+            borderRadius={2}
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            boxShadow="0 2px 8px rgba(0,0,0,0.05)"
+          >
+            <Stack direction="row">
+              <Typography color="grey" mr={2}>
+                {index >= 9 ? index + 1 : "0" + (index + 1)}
+              </Typography>
+              <Typography>{item.title}</Typography>
+            </Stack>
+
+            <Typography>฿{item.amount.toLocaleString()}</Typography>
+          </Stack>
+        </motion.div>
+      </div>
+    );
   };
 
   return (
@@ -305,41 +385,14 @@ export const Expense = () => {
           </Stack>
         </Stack>
         {(expenses?.expense?.length ?? 0) > 0 ? (
-          <Stack maxHeight={500} overflow={"scroll"} marginTop={2} paddingX={3}>
+          <Stack maxHeight={500} overflow={"scroll"} marginTop={2} paddingX={2}>
             {expenses?.expense.map((item, index) => (
-              <div key={index}>
-                <Stack
-                  marginBottom={1}
-                  width={"100%"}
-                  direction={"row"}
-                  key={index}
-                  display={"flex"}
-                  justifyContent={"space-between"}
-                >
-                  <Stack direction={"row"}>
-                    <Typography color="grey" marginRight={2}>
-                      {index >= 9 ? index + 1 : "0" + (index + 1)}
-                    </Typography>
-                    <Typography>{item.title}</Typography>
-                  </Stack>
-                  <Stack
-                    display={"flex"}
-                    gap={1}
-                    direction={"row"}
-                    alignItems={"center"}
-                  >
-                    <Typography>{formatterTHB.format(item.amount)}</Typography>
-                    <IconButton size="small" disableFocusRipple>
-                      <TbX />
-                    </IconButton>
-                  </Stack>
-                </Stack>
-                <Divider
-                  sx={{
-                    marginBottom: 3,
-                  }}
-                />
-              </div>
+              <SwipeItem
+                key={index}
+                item={item}
+                index={index}
+                onDelete={handleDelete}
+              />
             ))}
           </Stack>
         ) : (

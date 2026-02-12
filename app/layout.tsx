@@ -6,6 +6,7 @@ import theme from "../theme/theme";
 import { ThemeProvider } from "@mui/material/styles";
 import { Toaster } from "react-hot-toast";
 import { Menu } from "@/component/Menu";
+import { Providers } from "./provider";
 
 export const metadata: Metadata = {
   title: "Expense Tracker",
@@ -31,7 +32,7 @@ export default function RootLayout({
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
             <Toaster position="top-center" />
-            {children}
+            <Providers>{children}</Providers>
             <Menu />
           </ThemeProvider>
         </AppRouterCacheProvider>

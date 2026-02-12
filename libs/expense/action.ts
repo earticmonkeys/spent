@@ -83,3 +83,21 @@ export const deleteExpense = async (id: number) => {
     message: "Becareful Next Time !",
   };
 };
+
+export const getExpenseDateMonth = async (date: Date) => {
+  console.log(date);
+  const start = dayjs(date).startOf("month").toDate();
+  const end = dayjs(date).endOf("month").toDate();
+
+  console.log(start, end);
+  const expense = await prisma.expense.findMany({
+    where: {
+      createdAt: {
+        gte: start,
+        lte: end,
+      },
+    },
+  });
+
+  return expense;
+};

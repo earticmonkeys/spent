@@ -2,6 +2,14 @@
 
 import dayjs from "dayjs";
 import { prisma } from "../prisma";
+import utc from "dayjs/plugin/utc";
+
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TZ = "Asia/Bangkok";
 
 interface ExpenseSave {
   title: string;
@@ -33,8 +41,8 @@ export const saveExpense = async (
 };
 
 export const getExpense = async (date: Date) => {
-  const start = dayjs(date).startOf("day").toDate();
-  const end = dayjs(date).endOf("day").toDate();
+  const start = dayjs(date).tz(TZ).startOf("day").toDate();
+  const end = dayjs(date).tz(TZ).endOf("day").toDate();
 
   const [expense, aggregate] = await Promise.all([
     prisma.expense.findMany({
@@ -85,9 +93,8 @@ export const deleteExpense = async (id: number) => {
 };
 
 export const getExpenseDateMonth = async (date: Date) => {
-  console.log(date);
-  const start = dayjs(date).startOf("month").toDate();
-  const end = dayjs(date).endOf("month").toDate();
+  const start = dayjs(date).tz(TZ).startOf("month").toDate();
+  const end = dayjs(date).tz(TZ).endOf("month").toDate();
 
   console.log(start, end);
   const expense = await prisma.expense.findMany({

@@ -8,6 +8,15 @@ import { expense } from "@/libs/expense";
 import { motion } from "motion/react";
 import { FaGear } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
+import utc from "dayjs/plugin/utc";
+
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TZ = "Asia/Bangkok";
+
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = React.useState<Dayjs>(dayjs());
   const [currentMonth, setCurrentMonth] = React.useState<Dayjs>(dayjs());
@@ -24,7 +33,7 @@ export default function CalendarPage() {
   // โหลดข้อมูลทั้งเดือน
   // ===========================
   const loadMonthExpense = async (date: Dayjs) => {
-    const data = await expense.month(date.toDate());
+    const data = await expense.month(date.tz(TZ).toDate());
 
     const dateSet = new Set<string>();
 
@@ -39,7 +48,7 @@ export default function CalendarPage() {
   // โหลดข้อมูลของวันเดียว
   // ===========================
   const loadDailyExpense = async (date: Dayjs) => {
-    const data = await expense.get(date.toDate());
+    const data = await expense.get(date.tz(TZ).toDate());
     setDailyExpense(data);
   };
 

@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
-import theme from "../theme/theme";
 import { ThemeProvider } from "@mui/material/styles";
 import { Toaster } from "react-hot-toast";
 import { Menu } from "@/component/Menu";
 import { Providers } from "./provider";
+import theme from "@/theme/theme";
 
 export const metadata: Metadata = {
   title: "Expense Tracker",

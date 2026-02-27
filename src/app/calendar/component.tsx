@@ -26,7 +26,11 @@ export default function CalendarPage() {
 
   const [dailyExpense, setDailyExpense] = React.useState<{
     sum: number;
-    expense: { id: number; title: string; amount: number }[];
+    expense: {
+      morning: { id: number; title: string; amount: number; createdAt: Date }[];
+      afternoon: { id: number; title: string; amount: number; createdAt: Date }[];
+      night: { id: number; title: string; amount: number; createdAt: Date }[];
+    };
   } | null>(null);
 
   // ===========================
@@ -167,25 +171,40 @@ export default function CalendarPage() {
             </Typography>
 
             <Typography fontSize={12} color="grey">
-              {dailyExpense.expense.length} items
+              {dailyExpense.expense.morning.length + dailyExpense.expense.afternoon.length + dailyExpense.expense.night.length} items
             </Typography>
 
             <Divider sx={{ my: 2 }} />
 
-            {dailyExpense.expense.length > 0 ? (
-              dailyExpense.expense.slice(0, 3).map((item) => (
-                <Stack
-                  key={item.id}
-                  direction="row"
-                  justifyContent="space-between"
-                  mb={1}
-                >
-                  <Typography fontSize={14}>{item.title}</Typography>
-                  <Typography fontSize={14}>
-                    ฿{item.amount.toLocaleString()}
-                  </Typography>
-                </Stack>
-              ))
+            {dailyExpense.expense.morning.length > 0 ||
+            dailyExpense.expense.afternoon.length > 0 ||
+            dailyExpense.expense.night.length > 0 ? (
+              <>
+                {["morning", "afternoon", "night"].map((period) => {
+                  const items = dailyExpense.expense[period as keyof typeof dailyExpense.expense];
+                  if (items.length === 0) return null;
+                  return (
+                    <Stack key={period} mb={2}>
+                      <Typography fontSize={12} fontWeight={600} color="grey.600" mb={1}>
+                        {period === "morning" ? "🌅 Morning" : period === "afternoon" ? "☀️ Afternoon" : "🌙 Night"}
+                      </Typography>
+                      {items.slice(0, 3).map((item: { id: number; title: string; amount: number }) => (
+                        <Stack
+                          key={item.id}
+                          direction="row"
+                          justifyContent="space-between"
+                          mb={1}
+                        >
+                          <Typography fontSize={14}>{item.title}</Typography>
+                          <Typography fontSize={14}>
+                            ฿{item.amount.toLocaleString()}
+                          </Typography>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  );
+                })}
+              </>
             ) : (
               <Typography fontSize={13} color="grey">
                 No expenses on this day

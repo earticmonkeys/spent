@@ -2,66 +2,30 @@
 
 import { saveToast } from "@/component/Toaster";
 import { expense } from "@/libs/expense";
-import {
-  Button,
-  Container,
-  Divider,
-  IconButton,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Button, Container, Stack, Typography } from "@mui/material";
 import dayjs from "dayjs";
-import calendar from "dayjs/plugin/calendar";
 import React from "react";
-import { TbCirclePlusFilled, TbCurrencyBaht, TbTrash } from "react-icons/tb";
-
-import { FcCalendar } from "react-icons/fc";
-
-import { MdChevronLeft, MdChevronRight } from "react-icons/md";
-import { motion, useMotionValue, useTransform } from "motion/react";
 import toast from "react-hot-toast";
-import { useSearchParams, useRouter } from "next/navigation";
-
-dayjs.extend(calendar);
-
-function formatDate(date: string | Date) {
-  return dayjs(date).calendar(null, {
-    sameDay: "[Today]",
-    lastDay: "[Yesterday]",
-    lastWeek: "ddd, MMM D",
-    sameElse: "ddd, MMM D",
-  });
-}
-const formatterTHB = new Intl.NumberFormat("th-TH", {
-  style: "currency",
-  currency: "THB",
-});
+import { DateNavigator, TodayButton } from "@/components/DateNavigator";
+import { ExpenseSummary } from "@/components/ExpenseSummary";
+import { ExpenseInput } from "@/components/ExpenseInput";
+import { ExpenseList, GroupedExpenses } from "@/components/ExpenseList";
 
 export const Expense = (props: {
   expense: {
     sum: number;
-    expense: { id: number; title: string; amount: number }[];
+    expense: GroupedExpenses;
   };
   queryDate: string;
 }) => {
-  const router = useRouter();
+  const [selectedDate, setSelectedDate] = React.useState(dayjs(props.queryDate));
+  const [expenseInput, setExpenseInput] = React.useState({ title: "", amount: "" });
+  const [expenses, setExpenses] = React.useState(props.expense);
 
-  const [selectedDate, setSelectedDate] = React.useState(
-    dayjs(props.queryDate),
-  );
-  const [expenseInput, setExpenseInput] = React.useState({
-    title: "",
-    amount: "",
-  });
-  const [expenses, setExpenses] = React.useState<{
-    sum: number;
-    expense: { id: number; title: string; amount: number }[];
-  }>(props.expense);
+  const formRef = React.useRef<HTMLFormElement>(null);
 
   const handleOnGetExpense = async () => {
     const response = await expense.get(selectedDate.toDate());
-
     setExpenses(response);
   };
 
@@ -76,34 +40,34 @@ export const Expense = (props: {
     }));
   };
 
-  const handleAmountChange = (value: string) => {
-    const input = value.replace(/,/g, "");
-
-    if (!/^\d*\.?\d{0,2}$/.test(input)) return;
-
-    const [integer, decimal] = input.split(".");
-
-    const formattedInteger = integer
-      ? Number(integer).toLocaleString("th-TH")
-      : "";
-
-    const formatted =
-      decimal !== undefined
-        ? `${formattedInteger}.${decimal}`
-        : formattedInteger;
-
-    setExpenseInput((prev) => ({
-      ...prev,
-      amount: formatted,
-    }));
+  const evaluateAmount = (value: string): number => {
+    const clean = value.replace(/,/g, "");
+    if (!/^[\d+\-*/().\s]+$/.test(clean)) return NaN;
+    try {
+      const result = Function(`"use strict"; return (${clean})`)();
+      return typeof result === "number" && isFinite(result)
+        ? Number(result.toFixed(2))
+        : NaN;
+    } catch {
+      return NaN;
+    }
   };
 
   const handleOnExpenseSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (expenseInput.title.length <= 0 || expenseInput.amount.length <= 0) {
+    if (!expenseInput.title || !expenseInput.amount) {
       return saveToast("INVALID");
     }
-    const response = await expense.save(expenseInput, selectedDate.toDate());
+
+    const finalAmount = evaluateAmount(expenseInput.amount);
+    if (isNaN(finalAmount)) {
+      return toast.error("Invalid amount expression");
+    }
+
+    const response = await expense.save(
+      { title: expenseInput.title, amount: finalAmount.toString() },
+      selectedDate.toDate(),
+    );
 
     if (response.status !== 200) {
       return saveToast("FAIL");
@@ -113,334 +77,56 @@ export const Expense = (props: {
     await handleOnGetExpense();
     return saveToast("SUCCESS");
   };
-  const handlePrevDay = () => {
-    setSelectedDate((prev) => prev.subtract(1, "day"));
-  };
+
+  const handlePrevDay = () => setSelectedDate((prev) => prev.subtract(1, "day"));
 
   const handleNextDay = () => {
     const tomorrow = selectedDate.add(1, "day");
-
-    if (tomorrow.isAfter(dayjs(), "day")) return; // ❌ ห้ามเกินวันนี้
-
+    if (tomorrow.isAfter(dayjs(), "day")) return;
     setSelectedDate(tomorrow);
   };
-  const sleep = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
   const handleDelete = async (id: number) => {
     const response = await expense.delete(id);
-
     if (response.status !== 200) {
       return toast.error(response.message);
     }
-
     await sleep(250);
-
     await handleOnGetExpense();
     return toast.success(response.message);
   };
 
-  type SwipeItemProps = {
-    item: { id: number; title: string; amount: number };
-    index: number;
-    onDelete: (id: number) => void;
-  };
-  const SwipeItem = ({ item, index, onDelete }: SwipeItemProps) => {
-    const x = useMotionValue(0);
-    const opacity = useTransform(x, [-80, -40], [1, 0]);
-    const scale = useTransform(x, [-80, -40], [1, 0.5]);
-
-    return (
-      <div style={{ position: "relative", marginBottom: 12, width: "100%" }}>
-        {/* Background */}
-        <motion.div style={{ opacity, scale }} dragElastic={0.08}>
-          <Stack
-            position="absolute"
-            right={0}
-            top={0}
-            bottom={0}
-            width={120}
-            bgcolor="#F63049"
-            justifyContent="center"
-            alignItems="center"
-            borderRadius={2}
-          >
-            <TbTrash size={24} color="white" />
-          </Stack>
-        </motion.div>
-
-        {/* Foreground */}
-        <motion.div
-          style={{ x }}
-          drag="x"
-          dragConstraints={{ left: -85, right: 0 }}
-          dragElastic={0.5}
-          onDragEnd={(e, info) => {
-            if (info.offset.x < -80) {
-              onDelete(item.id);
-            }
-          }}
-        >
-          <Stack
-            bgcolor="white"
-            padding={2.5}
-            width={"100%"}
-            borderRadius={2}
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            boxShadow="0 2px 8px rgba(0,0,0,0.05)"
-          >
-            <Stack direction="row">
-              <Typography color="grey" mr={2}>
-                {index >= 9 ? index + 1 : "0" + (index + 1)}
-              </Typography>
-              <Typography>{item.title}</Typography>
-            </Stack>
-
-            <Typography>฿{item.amount.toLocaleString()}</Typography>
-          </Stack>
-        </motion.div>
-      </div>
-    );
-  };
+  const itemCount =
+    (expenses?.expense.morning.length ?? 0) +
+    (expenses?.expense.afternoon.length ?? 0) +
+    (expenses?.expense.night.length ?? 0);
 
   return (
-    <Container
-      maxWidth={"sm"}
-      sx={{
-        paddingY: 3,
-        paddingX: 2,
-      }}
-    >
+    <Container maxWidth={"sm"} sx={{ paddingY: 3, paddingX: 2 }}>
       <Stack width={"100%"} height={"100%"}>
-        <Stack
-          width={"100%"}
-          display={"flex"}
-          justifyContent={"flex-start"}
-          alignItems={"start"}
-        >
-          <Stack
-            width={"100%"}
-            direction={"row"}
-            display={"flex"}
-            justifyContent={"space-between"}
-          >
-            <Typography fontSize={24} fontWeight={600}>
-              Spent
-            </Typography>
-            <Button
-              onClick={() => {
-                setSelectedDate(dayjs());
-                router.replace("/");
-              }}
-              variant="contained"
-              sx={{
-                borderRadius: 5,
-                width: 30,
-                paddingX: 6,
-                fontWeight: 700,
-                fontSize: 12,
-                background: "white",
-                color: "#111827",
-                boxShadow: "0 0px 5px rgba(0,0,0,0.10)",
-              }}
-              disableElevation
-              startIcon={<FcCalendar size={20} color="red" />}
-            >
-              Today
-            </Button>
+        <Stack width={"100%"} display={"flex"} justifyContent={"flex-start"} alignItems={"start"}>
+          <Stack width={"100%"} direction={"row"} display={"flex"} justifyContent={"space-between"}>
+            <Typography fontSize={24} fontWeight={600}>Spent</Typography>
+            <TodayButton />
           </Stack>
-          <Stack
-            width={"100%"}
-            display={"flex"}
-            justifyContent={"center"}
-            alignItems={"center"}
-          >
-            {/* DATE SECTION */}
-            <Stack
-              marginTop={3}
-              width={"100%"}
-              display={"flex"}
-              direction={"row"}
-              gap={3}
-              justifyContent={"center"}
-            >
-              <IconButton onClick={() => handlePrevDay()} disableRipple>
-                <MdChevronLeft />
-              </IconButton>
-              <Stack width={"100%"}>
-                <Typography textAlign={"center"} fontSize={16} fontWeight={500}>
-                  {formatDate(selectedDate.toDate())}
-                </Typography>
-                <Typography
-                  textAlign={"center"}
-                  fontSize={12}
-                  noWrap
-                  fontWeight={400}
-                  color="grey"
-                >
-                  {dayjs(selectedDate).format("dddd")},{" "}
-                  {dayjs(selectedDate).format("MMMM DD")}
-                </Typography>
-              </Stack>
-              {!selectedDate.isSame(dayjs(), "day") ? (
-                <IconButton onClick={handleNextDay} disableRipple>
-                  <MdChevronRight />
-                </IconButton>
-              ) : (
-                <IconButton
-                  sx={{
-                    visibility: "hidden",
-                  }}
-                >
-                  <MdChevronRight />
-                </IconButton>
-              )}
-            </Stack>
-
-            {/* SUMMARY SECTION */}
-            <Stack paddingX={2} marginTop={3} width={"100%"}>
-              <Typography
-                textAlign={"left"}
-                fontSize={14}
-                fontWeight={400}
-                color="grey"
-              >
-                TOTAL SPENT
-              </Typography>
-              <Stack
-                display={"flex"}
-                direction={"row"}
-                justifyContent={"space-between"}
-                alignItems={"end"}
-              >
-                <Typography fontSize={32} fontWeight={900}>
-                  {formatterTHB.format(expenses?.sum ?? 0)}
-                </Typography>
-                <Typography fontSize={12} fontWeight={400} color="grey">
-                  {expenses?.expense.length} items
-                </Typography>
-              </Stack>
-              <Divider
-                sx={{
-                  marginTop: 2,
-                  color: "grey",
-                  width: "100%",
-                }}
-              />
-            </Stack>
-
-            {/* INPUT SECTION */}
-            <form style={{ width: "100%" }} onSubmit={handleOnExpenseSave}>
-              <Stack
-                borderRadius={"10px"}
-                width={"100%"}
-                display={"flex"}
-                direction={"row"}
-                justifyContent={"space-between"}
-                alignItems={"center"}
-                paddingX={2}
-                marginTop={3}
-              >
-                <Stack
-                  width={"100%"}
-                  direction={"row"}
-                  display={"flex"}
-                  justifyContent={"space-between"}
-                  alignItems={"center"}
-                  paddingX={1.5}
-                  paddingY={2}
-                  border={"1px solid rgba(0,0,0,0.1)"}
-                  borderRadius={"10px"}
-                  bgcolor={"rgba(0,0,0,0.02)"}
-                >
-                  <Stack width={"60%"}>
-                    <TextField
-                      fullWidth
-                      placeholder="What is it ?"
-                      variant="standard"
-                      value={expenseInput.title}
-                      onChange={(e) =>
-                        handleOnExpenseInput("title", e.target.value)
-                      }
-                      slotProps={{
-                        input: {
-                          disableUnderline: true,
-                          sx: {
-                            color: "black",
-                          },
-                        },
-                      }}
-                    />
-                  </Stack>
-                  <Stack width={"30%"}>
-                    <TextField
-                      placeholder="0.00"
-                      variant="standard"
-                      fullWidth
-                      type="text"
-                      inputMode="decimal"
-                      value={expenseInput.amount}
-                      onChange={(e) =>
-                        handleAmountChange(e.currentTarget.value)
-                      }
-                      slotProps={{
-                        input: {
-                          sx: {
-                            fontWeight: 500,
-                            color: "black",
-                          },
-
-                          disableUnderline: true,
-                          startAdornment: (
-                            <TbCurrencyBaht
-                              color="grey"
-                              size={30}
-                              style={{ marginRight: 20 }}
-                            />
-                          ),
-                        },
-                      }}
-                    />
-                  </Stack>
-                  <IconButton
-                    type="submit"
-                    sx={{
-                      borderRadius: "10px",
-                    }}
-                    size="medium"
-                  >
-                    <TbCirclePlusFilled />
-                  </IconButton>
-                </Stack>
-              </Stack>
-            </form>
+          <Stack width={"100%"} display={"flex"} justifyContent={"center"} alignItems={"center"}>
+            <DateNavigator
+              selectedDate={selectedDate}
+              onPrev={handlePrevDay}
+              onNext={handleNextDay}
+            />
+            <ExpenseSummary sum={expenses?.sum ?? 0} itemCount={itemCount} />
+            <ExpenseInput
+              value={expenseInput}
+              onChange={handleOnExpenseInput}
+              onSubmit={handleOnExpenseSave}
+              formRef={formRef}
+            />
           </Stack>
         </Stack>
-        {(expenses?.expense?.length ?? 0) > 0 ? (
-          <Stack maxHeight={300} overflow={"scroll"} marginTop={2} paddingX={2}>
-            {expenses?.expense.map((item, index) => (
-              <SwipeItem
-                key={index}
-                item={item}
-                index={index}
-                onDelete={handleDelete}
-              />
-            ))}
-          </Stack>
-        ) : (
-          <Stack
-            height={300}
-            width={"100%"}
-            justifyContent={"center"}
-            alignItems={"center"}
-          >
-            <Typography color="grey">No expenses yet today</Typography>
-            <Typography fontSize={12} color="grey">
-              Start typing above to add one
-            </Typography>
-          </Stack>
-        )}
+        <ExpenseList expenses={expenses?.expense} onDelete={handleDelete} />
       </Stack>
     </Container>
   );

@@ -40,35 +40,42 @@ export const saveExpense = async (
   };
 };
 
+const getTimePeriod = (date: Date): "morning" | "afternoon" | "night" => {
+  const hour = dayjs(date).tz(TZ).hour();
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 18) return "afternoon";
+  return "night";
+};
+
 export const getExpense = async (date: Date) => {
   const start = dayjs(date).tz(TZ).startOf("day").toDate();
   const end = dayjs(date).tz(TZ).endOf("day").toDate();
 
-  const [expense, aggregate] = await Promise.all([
-    prisma.expense.findMany({
-      where: {
-        createdAt: {
-          gte: start,
-          lte: end,
-        },
+  const expenses = await prisma.expense.findMany({
+    where: {
+      createdAt: {
+        gte: start,
+        lte: end,
       },
-    }),
-    prisma.expense.aggregate({
-      _sum: {
-        amount: true,
-      },
-      where: {
-        createdAt: {
-          gte: start,
-          lte: end,
-        },
-      },
-    }),
-  ]);
+    },
+  });
+
+  const grouped = {
+    morning: [] as typeof expenses,
+    afternoon: [] as typeof expenses,
+    night: [] as typeof expenses,
+  };
+
+  let sum = 0;
+  for (const expense of expenses) {
+    const period = getTimePeriod(expense.createdAt);
+    grouped[period].push(expense);
+    sum += expense.amount;
+  }
 
   return {
-    sum: aggregate._sum.amount ?? 0,
-    expense: expense,
+    sum,
+    expense: grouped,
   };
 };
 

@@ -14,16 +14,36 @@ import {
 import dayjs from "dayjs";
 import calendar from "dayjs/plugin/calendar";
 import React from "react";
-import { TbCirclePlusFilled, TbCurrencyBaht, TbTrash } from "react-icons/tb";
+import {
+  TbCirclePlusFilled,
+  TbCurrencyBaht,
+  TbMoon,
+  TbTrash,
+} from "react-icons/tb";
+
+import { PiSunHorizonFill, PiSunFill, PiMoonFill } from "react-icons/pi";
 
 import { FcCalendar } from "react-icons/fc";
 
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { motion, useMotionValue, useTransform } from "motion/react";
 import toast from "react-hot-toast";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 dayjs.extend(calendar);
+
+function parsedDateIcon(date: string | Date) {
+  const hour = dayjs(date).hour();
+  const size = 18;
+
+  if (hour >= 5 && hour < 12) {
+    return <PiSunHorizonFill size={size} color="#DA3D20" />;
+  } else if (hour >= 12 && hour < 18) {
+    return <PiSunFill size={size} color="#FFC300" />;
+  } else {
+    return <PiMoonFill size={size} color="#3D45AA" />;
+  }
+}
 
 function formatDate(date: string | Date) {
   return dayjs(date).calendar(null, {
@@ -41,7 +61,7 @@ const formatterTHB = new Intl.NumberFormat("th-TH", {
 export const Expense = (props: {
   expense: {
     sum: number;
-    expense: { id: number; title: string; amount: number }[];
+    expense: { id: number; title: string; amount: number; createdAt: Date }[];
   };
   queryDate: string;
 }) => {
@@ -56,7 +76,7 @@ export const Expense = (props: {
   });
   const [expenses, setExpenses] = React.useState<{
     sum: number;
-    expense: { id: number; title: string; amount: number }[];
+    expense: { id: number; title: string; amount: number; createdAt: Date }[];
   }>(props.expense);
 
   const handleOnGetExpense = async () => {
@@ -76,9 +96,39 @@ export const Expense = (props: {
     }));
   };
 
+  const evaluateAmount = (value: string): number => {
+    const clean = value.replace(/,/g, "");
+
+    if (!/^[\d+\-*/().\s]+$/.test(clean)) return NaN;
+
+    try {
+      const result = Function(`"use strict"; return (${clean})`)();
+      return typeof result === "number" && isFinite(result)
+        ? Number(result.toFixed(2))
+        : NaN;
+    } catch {
+      return NaN;
+    }
+  };
+
   const handleAmountChange = (value: string) => {
     const input = value.replace(/,/g, "");
 
+    // allow only numbers + math operators
+    if (!/^[\d+\-*/().\s]*$/.test(input)) return;
+
+    const hasOperator = /[+\-*/()]/.test(input);
+
+    // ถ้ามี operator → ไม่ต้อง format comma
+    if (hasOperator) {
+      setExpenseInput((prev) => ({
+        ...prev,
+        amount: input,
+      }));
+      return;
+    }
+
+    // ถ้าเป็นตัวเลขล้วน ค่อย validate ทศนิยม
     if (!/^\d*\.?\d{0,2}$/.test(input)) return;
 
     const [integer, decimal] = input.split(".");
@@ -98,12 +148,28 @@ export const Expense = (props: {
     }));
   };
 
+  const formRef = React.useRef<HTMLFormElement>(null);
+
   const handleOnExpenseSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (expenseInput.title.length <= 0 || expenseInput.amount.length <= 0) {
+
+    if (!expenseInput.title || !expenseInput.amount) {
       return saveToast("INVALID");
     }
-    const response = await expense.save(expenseInput, selectedDate.toDate());
+
+    const finalAmount = evaluateAmount(expenseInput.amount);
+
+    if (isNaN(finalAmount)) {
+      return toast.error("Invalid amount expression");
+    }
+
+    const response = await expense.save(
+      {
+        title: expenseInput.title,
+        amount: finalAmount.toString(),
+      },
+      selectedDate.toDate(),
+    );
 
     if (response.status !== 200) {
       return saveToast("FAIL");
@@ -140,7 +206,7 @@ export const Expense = (props: {
   };
 
   type SwipeItemProps = {
-    item: { id: number; title: string; amount: number };
+    item: { id: number; title: string; amount: number; createdAt: Date };
     index: number;
     onDelete: (id: number) => void;
   };
@@ -190,11 +256,34 @@ export const Expense = (props: {
             alignItems="center"
             boxShadow="0 2px 8px rgba(0,0,0,0.05)"
           >
-            <Stack direction="row">
+            <Stack
+              direction="row"
+              display={"flex"}
+              justifyContent={"center"}
+              alignItems={"center"}
+            >
               <Typography color="grey" mr={2}>
                 {index >= 9 ? index + 1 : "0" + (index + 1)}
               </Typography>
-              <Typography>{item.title}</Typography>
+              <Stack
+                display={"flex"}
+                direction={"column"}
+                justifyContent={"center"}
+              >
+                <Typography>{item.title}</Typography>
+                <Stack
+                  display={"flex"}
+                  direction={"row"}
+                  justifyContent={"center"}
+                  alignItems={"center"}
+                  gap={0.5}
+                >
+                  {parsedDateIcon(item.createdAt)}
+                  <Typography fontSize={12} color="textDisabled">
+                    {dayjs(item.createdAt).format("DD MMM  | HH:mm:ss")}{" "}
+                  </Typography>
+                </Stack>
+              </Stack>
             </Stack>
 
             <Typography>฿{item.amount.toLocaleString()}</Typography>
@@ -331,7 +420,11 @@ export const Expense = (props: {
             </Stack>
 
             {/* INPUT SECTION */}
-            <form style={{ width: "100%" }} onSubmit={handleOnExpenseSave}>
+            <form
+              ref={formRef}
+              style={{ width: "100%" }}
+              onSubmit={handleOnExpenseSave}
+            >
               <Stack
                 borderRadius={"10px"}
                 width={"100%"}
@@ -369,6 +462,12 @@ export const Expense = (props: {
                           sx: {
                             color: "black",
                           },
+                          onKeyDown: (e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              formRef.current?.requestSubmit();
+                            }
+                          },
                         },
                       }}
                     />
@@ -392,6 +491,12 @@ export const Expense = (props: {
                           },
 
                           disableUnderline: true,
+                          onKeyDown: (e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              formRef.current?.requestSubmit();
+                            }
+                          },
                           startAdornment: (
                             <TbCurrencyBaht
                               color="grey"

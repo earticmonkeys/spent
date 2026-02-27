@@ -14,12 +14,7 @@ import {
 import dayjs from "dayjs";
 import calendar from "dayjs/plugin/calendar";
 import React from "react";
-import {
-  TbCirclePlusFilled,
-  TbCurrencyBaht,
-  TbMoon,
-  TbTrash,
-} from "react-icons/tb";
+import { TbCirclePlusFilled, TbCurrencyBaht, TbTrash } from "react-icons/tb";
 
 import { PiSunHorizonFill, PiSunFill, PiMoonFill } from "react-icons/pi";
 
@@ -34,7 +29,7 @@ dayjs.extend(calendar);
 
 function parsedDateIcon(date: string | Date) {
   const hour = dayjs(date).hour();
-  const size = 18;
+  const size = 16;
 
   if (hour >= 5 && hour < 12) {
     return <PiSunHorizonFill size={size} color="#DA3D20" />;
@@ -61,7 +56,16 @@ const formatterTHB = new Intl.NumberFormat("th-TH", {
 export const Expense = (props: {
   expense: {
     sum: number;
-    expense: { id: number; title: string; amount: number; createdAt: Date }[];
+    expense: {
+      morning: { id: number; title: string; amount: number; createdAt: Date }[];
+      afternoon: {
+        id: number;
+        title: string;
+        amount: number;
+        createdAt: Date;
+      }[];
+      night: { id: number; title: string; amount: number; createdAt: Date }[];
+    };
   };
   queryDate: string;
 }) => {
@@ -76,7 +80,16 @@ export const Expense = (props: {
   });
   const [expenses, setExpenses] = React.useState<{
     sum: number;
-    expense: { id: number; title: string; amount: number; createdAt: Date }[];
+    expense: {
+      morning: { id: number; title: string; amount: number; createdAt: Date }[];
+      afternoon: {
+        id: number;
+        title: string;
+        amount: number;
+        createdAt: Date;
+      }[];
+      night: { id: number; title: string; amount: number; createdAt: Date }[];
+    };
   }>(props.expense);
 
   const handleOnGetExpense = async () => {
@@ -280,7 +293,7 @@ export const Expense = (props: {
                 >
                   {parsedDateIcon(item.createdAt)}
                   <Typography fontSize={12} color="textDisabled">
-                    {dayjs(item.createdAt).format("DD MMM  | HH:mm:ss")}{" "}
+                    {dayjs(item.createdAt).format("HH:mm")}{" "}
                   </Typography>
                 </Stack>
               </Stack>
@@ -407,7 +420,10 @@ export const Expense = (props: {
                   {formatterTHB.format(expenses?.sum ?? 0)}
                 </Typography>
                 <Typography fontSize={12} fontWeight={400} color="grey">
-                  {expenses?.expense.length} items
+                  {(expenses?.expense.morning.length ?? 0) +
+                    (expenses?.expense.afternoon.length ?? 0) +
+                    (expenses?.expense.night.length ?? 0)}{" "}
+                  items
                 </Typography>
               </Stack>
               <Divider
@@ -522,16 +538,142 @@ export const Expense = (props: {
             </form>
           </Stack>
         </Stack>
-        {(expenses?.expense?.length ?? 0) > 0 ? (
+        {(expenses?.expense?.morning.length ?? 0) +
+          (expenses?.expense?.afternoon.length ?? 0) +
+          (expenses?.expense?.night.length ?? 0) >
+        0 ? (
           <Stack maxHeight={300} overflow={"scroll"} marginTop={2} paddingX={2}>
-            {expenses?.expense.map((item, index) => (
-              <SwipeItem
-                key={index}
-                item={item}
-                index={index}
-                onDelete={handleDelete}
-              />
-            ))}
+            {expenses?.expense.morning.length > 0 &&
+              expenses?.expense.afternoon.length > 0 && (
+                <Stack direction="row" alignItems="center" gap={1} my={1}>
+                  <Divider sx={{ flex: 1 }}>
+                    <Stack
+                      display={"flex"}
+                      direction={"row"}
+                      justifyContent={"center"}
+                      alignItems={"center"}
+                      gap={1}
+                    >
+                      <PiSunHorizonFill size={14} color="#DA3D20" />
+                      <Typography
+                        fontSize={12}
+                        fontStyle={"italic"}
+                        fontWeight={400}
+                        color="textDisabled"
+                      >
+                        ☕︎fresh start ~
+                      </Typography>
+                    </Stack>
+                  </Divider>
+                </Stack>
+              )}
+            {expenses?.expense.morning.map(
+              (
+                item: {
+                  id: number;
+                  title: string;
+                  amount: number;
+                  createdAt: Date;
+                },
+                index: number,
+              ) => (
+                <SwipeItem
+                  key={`morning-${index}`}
+                  item={item}
+                  index={index}
+                  onDelete={handleDelete}
+                />
+              ),
+            )}
+            {expenses?.expense.afternoon.length > 0 &&
+              expenses?.expense.night.length > 0 && (
+                <Stack direction="row" alignItems="center" gap={1} my={1}>
+                  <Divider sx={{ flex: 1 }}>
+                    <Stack
+                      display={"flex"}
+                      direction={"row"}
+                      justifyContent={"center"}
+                      alignItems={"center"}
+                      gap={1}
+                    >
+                      <PiSunFill size={14} color="#FFC300" />
+                      <Typography
+                        fontSize={12}
+                        fontStyle={"italic"}
+                        fontWeight={400}
+                        color="textDisabled"
+                      >
+                        Bon appétit 🍽️
+                      </Typography>
+                    </Stack>
+                  </Divider>
+                </Stack>
+              )}
+
+            {expenses?.expense.afternoon.map(
+              (
+                item: {
+                  id: number;
+                  title: string;
+                  amount: number;
+                  createdAt: Date;
+                },
+                index: number,
+              ) => (
+                <SwipeItem
+                  key={`afternoon-${index}`}
+                  item={item}
+                  index={expenses?.expense.morning.length + index}
+                  onDelete={handleDelete}
+                />
+              ),
+            )}
+            {expenses?.expense.night.length > 0 && (
+              <Stack direction="row" alignItems="center" gap={1} my={1}>
+                <Divider sx={{ flex: 1 }} about="Night">
+                  <Stack
+                    display={"flex"}
+                    direction={"row"}
+                    justifyContent={"center"}
+                    alignItems={"center"}
+                    gap={1}
+                  >
+                    <PiMoonFill size={14} color="#3D45AA" />
+
+                    <Typography
+                      fontSize={12}
+                      fontStyle={"italic"}
+                      fontWeight={400}
+                      color="textDisabled"
+                    >
+                      sweet dreams ᶻ𝗓𐰁 .ᐟ
+                    </Typography>
+                  </Stack>
+                </Divider>
+              </Stack>
+            )}
+            {expenses?.expense.night.map(
+              (
+                item: {
+                  id: number;
+                  title: string;
+                  amount: number;
+                  createdAt: Date;
+                },
+                index: number,
+              ) => (
+                <SwipeItem
+                  key={`night-${index}`}
+                  item={item}
+                  index={
+                    expenses?.expense.morning.length +
+                    expenses?.expense.afternoon.length +
+                    index
+                  }
+                  onDelete={handleDelete}
+                />
+              ),
+            )}
           </Stack>
         ) : (
           <Stack
